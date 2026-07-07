@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#507DE5" />
+<title>Power Analytix — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3/lib/msal-browser.min.js"></script>
+<style>
+  :root{--ink:#10183a;--bg:#eef2fb;--card:#fff;--brand:#507DE5;--brand-dk:#2f55b8;--brand-deep:#1b3a8c;
+    --line:#dde4f3;--muted:#69718c;--err:#b3261e;--ok:#1E7A52;--warn:#8a6d1f;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;font-family:'Albert Sans',system-ui,sans-serif;color:var(--ink);
+    background:radial-gradient(130% 90% at 0% 0%,#dce7fb 0%,transparent 55%),var(--bg);padding:24px 16px 60px;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  header{display:flex;align-items:center;gap:13px;margin-bottom:18px;}
+  .logo{width:50px;height:50px;border-radius:12px;background:#fff;border:1px solid var(--line);object-fit:contain;padding:5px;}
+  .kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);font-weight:600;}
+  h1{font-family:'Sora',sans-serif;font-weight:700;font-size:23px;margin:2px 0 0;}
+  .menuBtn{margin-left:auto;font-family:'Sora',sans-serif;font-weight:600;font-size:14px;color:#fff;text-decoration:none;
+    background:linear-gradient(135deg,var(--brand),var(--brand-deep));padding:11px 18px;border-radius:10px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;
+    box-shadow:0 20px 44px -34px rgba(16,24,58,.4);}
+  button{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:none;border-radius:9px;
+    padding:10px 16px;background:linear-gradient(135deg,var(--brand),var(--brand-deep));color:#fff;}
+  button.ghost{background:#eef2fb;color:var(--brand-dk);}
+  button.tiny{padding:5px 10px;font-size:12px;border-radius:7px;}
+  button.danger{background:#fbeae9;color:var(--err);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  input[type=text],input[type=email]{font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:9px;width:100%;}
+  select{font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  .hidden{display:none !important;}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap;}
+  .tab{font-family:'Sora',sans-serif;font-weight:600;font-size:13.5px;background:none;color:var(--muted);
+    padding:10px 15px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0;}
+  .tab.active{color:var(--brand);border-bottom-color:var(--brand);}
+  .msg{padding:10px 12px;border-radius:9px;margin:10px 0;display:none;font-size:14px;}
+  .msg.err{display:block;background:#fbeae9;color:var(--err);border:1px solid #f3c9c6;}
+  .msg.ok{display:block;background:#e8f5ee;color:var(--ok);border:1px solid #bfe3cf;}
+  .gate{min-height:78vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .gate-card{background:#fff;border-radius:16px;padding:38px 34px;max-width:390px;width:100%;text-align:center;
+    border:1px solid var(--line);box-shadow:0 1px 2px rgba(16,24,58,.06),0 24px 60px -28px rgba(16,24,58,.35);}
+  .gate-card p{color:var(--muted);font-size:14px;}
+  .gate-card p.err{color:var(--err);font-weight:600;}
+  .gate-card .btn-full{width:100%;margin-top:8px;}
+  table.staff{width:100%;border-collapse:collapse;font-size:13px;}
+  table.staff th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    text-align:left;padding:8px;border-bottom:1px solid var(--line);}
+  table.staff td{padding:9px 8px;border-bottom:1px solid #eef1f8;vertical-align:middle;}
+  table.staff td.c,table.staff th.c{text-align:center;}
+  .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;}
+  .pill.on{background:var(--ok);} .pill.off{background:#9aa2b8;} .pill.busy{background:#c9a24b;}
+  .tgl{cursor:pointer;user-select:none;}
+  .chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;}
+  .chip.sync{background:#e8f5ee;color:var(--ok);}
+  .chip.warn{background:#fbf3dc;color:var(--warn);cursor:pointer;border:1px solid #f0e0b0;}
+  .chip.mut{background:#eef2fb;color:var(--muted);}
+  .chip.pend{background:#fbf3dc;color:var(--warn);}
+  .inviteBtn{font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--line);
+    border-radius:7px;padding:4px 10px;background:#eef2fb;color:var(--brand-dk);}
+  .rmBtn{font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #f3c9c6;
+    border-radius:7px;padding:4px 10px;background:#fbeae9;color:var(--err);}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:8px 0 12px;}
+  .fld{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:600;color:var(--muted);}
+  .jump{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--ink);border:1px solid var(--line);
+    border-radius:13px;padding:17px;background:#fff;transition:.15s;}
+  .jump:hover{border-color:var(--brand);transform:translateY(-1px);}
+  .jump b{font-family:'Sora',sans-serif;}
+  .jump span{font-size:12.5px;color:var(--muted);}
+  .sumrow{display:flex;gap:18px;flex-wrap:wrap;font-size:13.5px;color:var(--muted);margin-bottom:12px;}
+  .sumrow b{color:var(--ink);}
+  .note{font-size:12px;color:var(--muted);background:#f6f8fd;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-top:14px;}
+  footer{text-align:center;font-size:11px;color:var(--muted);margin-top:18px;}
+  /* permissions tab */
+  #busy{position:fixed;inset:0;background:rgba(238,242,251,.7);display:none;align-items:center;justify-content:center;z-index:50;
+    font-family:'Sora',sans-serif;font-weight:600;color:var(--brand-dk);font-size:16px;}
+  #busy.show{display:flex;}
+  .scopeblock{border:1px solid var(--line);border-radius:11px;margin-bottom:16px;overflow:hidden;}
+  .scopehead{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#f6f8fd;font-family:'Sora',sans-serif;font-weight:600;font-size:14px;flex-wrap:wrap;}
+  .scopehead .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+  .ppill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;color:#fff;}
+  .ppill.inh{background:#c0392b;} .ppill.uniq{background:#1f7a4d;} .ppill.site{background:#507DE5;}
+  table.perm{border-collapse:collapse;width:100%;font-size:13px;}
+  table.perm th,table.perm td{border-top:1px solid #eef1f8;padding:7px 14px;text-align:left;vertical-align:top;}
+  table.perm th{font-weight:600;color:#3a4360;font-size:12px;background:#fbfcfe;border-top:none;}
+  .who b{display:block;}
+  .who span{font-size:12px;color:var(--muted);}
+  .members{font-size:12px;color:#3a4360;margin:3px 0 0;padding-left:16px;}
+  .orphan{color:var(--warn);font-weight:600;font-size:11px;}
+  .rolechip{display:inline-block;background:#eef2fb;color:var(--brand-dk);border-radius:6px;padding:2px 8px;font-size:11.5px;font-weight:600;margin:1px 3px 1px 0;}
+  .rolechip.hot{background:#fbeae9;color:var(--err);}
+  .rowact{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .addrow{display:flex;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid #eef1f8;background:#fbfcfe;flex-wrap:wrap;}
+  .addrow input[type=email]{width:auto;min-width:230px;}
+  .pnote{font-size:13px;padding:10px 14px;background:#fbf3dc;color:var(--warn);border-top:1px solid #f0e0b0;}
+  .summary{border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:16px;font-size:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+  .summary .g{color:var(--ok);font-weight:600;} .summary .b{color:var(--err);font-weight:600;}
+  .summary button{margin-left:auto;}
+</style>
+</head>
+<body>
+<div id="busy">Applying changes…</div>
+
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;">
+      <img id="gateLogo" src="data:image/png;base64,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" alt="Power Analytix" style="width:52px;height:52px;border-radius:12px;background:#fff;border:1px solid var(--line);object-fit:contain;padding:5px;">
+      <div style="text-align:left;font-family:'Sora',sans-serif;font-weight:700;font-size:22px;line-height:1.02;">
+        <span style="display:block;color:var(--ink);">Power</span>
+        <span style="display:block;color:var(--brand);">Analytix</span>
+      </div>
+    </div>
+    <h1 style="font-size:20px;margin-bottom:8px;">Admin</h1>
+    <p id="gateMsg">Sign in with your administrator account.</p>
+    <button class="btn-full" id="gateSignIn">Sign in with Microsoft</button>
+    <button class="btn-full ghost" id="gateSwitch" style="display:none">Switch account</button>
+    <a href="https://portal.poweranalytix.co.uk/" style="display:block;width:100%;margin-top:10px;padding:12px;text-align:center;font-family:'Sora',sans-serif;font-weight:600;font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;text-decoration:none;box-sizing:border-box;">&#9666; Return to Menu</a>
+  </div>
+</div>
+
+<div id="app" class="wrap hidden">
+  <header>
+    <img class="logo" id="logoImg" src="" alt="Power Analytix">
+    <div><div class="kicker">Admin</div><h1>Power Analytix</h1></div>
+    <a class="menuBtn" href="https://portal.poweranalytix.co.uk/">Return to Menu</a>
+  </header>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" data-t="users">Users &amp; Access</button>
+      <button class="tab" data-t="invoices">Invoices</button>
+      <button class="tab" data-t="tools">Timesheets &amp; Expenses</button>
+      <button class="tab" data-t="perm">Permissions</button>
+    </div>
+    <div class="msg" id="msg"></div>
+
+    <!-- USERS & ACCESS -->
+    <div id="t-users">
+      <table class="staff" id="staffTable"></table>
+      <div style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px;">
+        <b style="font-family:'Sora',sans-serif;font-size:14px;">Add user</b>
+        <div class="grid2" style="margin-top:10px;">
+          <label class="fld">Sign-in email *<input type="email" id="u_email" placeholder="name@company.com"></label>
+          <label class="fld">Official name *<input type="text" id="u_name" placeholder="e.g. Jane Smith"></label>
+          <label class="fld">Business name<input type="text" id="u_biz" placeholder="optional"></label>
+        </div>
+        <label style="display:inline-flex;align-items:center;gap:7px;margin:0 0 10px;font-size:13px;color:var(--muted);cursor:pointer;">
+          <input type="checkbox" id="u_invite" checked style="width:15px;height:15px;accent-color:var(--brand);">
+          Send Microsoft invite email (external users)
+        </label><br>
+        <button id="addUserBtn">Add user</button>
+        <div class="note">Toggles now drive real access: switching a flag on/off adds or removes the person in the matching
+          SharePoint groups (and the invoicing lists) automatically. The <b>Access</b> column shows whether SharePoint matches
+          the flags — click a <b>⚠ sync</b> chip to fix a mismatch. New users are added to the Staff-list readers group
+          automatically when you switch their first flag on.</div>
+      </div>
+    </div>
+
+    <!-- INVOICES -->
+    <div id="t-invoices" class="hidden">
+      <div class="sumrow" id="invSum">Loading…</div>
+      <table class="staff" id="invTable"></table>
+      <div style="margin-top:14px;"><a class="jump" style="display:inline-flex;flex-direction:row;gap:10px;align-items:center;" href="https://invoices.poweranalytix.co.uk/"><b>Open Invoicing app</b><span>create, edit, print and manage statuses</span></a></div>
+    </div>
+
+    <!-- TOOLS -->
+    <div id="t-tools" class="hidden">
+      <div class="grid2">
+        <a class="jump" href="https://timesheet.poweranalytix.co.uk/overview.html">
+          <b>Timesheet overview</b><span>Monthly grid of everyone's days, activities and absences.</span></a>
+        <a class="jump" href="https://expenses.poweranalytix.co.uk/">
+          <b>Expenses admin</b><span>Open the Expenses app — the Admin tab gives per-person monthly claims and mileage rates.</span></a>
+      </div>
+    </div>
+
+    <!-- PERMISSIONS -->
+    <div id="t-perm" class="hidden">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+        <label class="fld" style="min-width:260px;">Site
+          <select id="permSite"></select>
+        </label>
+        <button id="permRun" style="align-self:flex-end;">Run report</button>
+        <span id="permStatus" style="margin-left:auto;font-size:12.5px;color:var(--muted);"></span>
+      </div>
+      <div id="permOut"><p style="color:var(--muted);font-size:14px;">Pick a site and run the report to see site-level and
+        per-list permissions, with SharePoint groups expanded to people. Principals with no Staff row are flagged
+        <span class="orphan">⚠ not in Staff</span>. On the PowerAnalytix site you can also stop/restore inheritance,
+        change levels, remove principals, and add people per list.</p></div>
+    </div>
+  </div>
+  <footer>Power Analytix · Admin · <span style="opacity:.7">v2.0 · 26 Jun 2026 · build 9</span></footer>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const CONFIG = {
+  clientId: "f76b090f-7d46-447b-8545-954d22814232",
+  tenantId: "be344548-8db6-49d6-8155-1f85b6ae1dad",
+  redirectUri: "https://portal.poweranalytix.co.uk/admin.html",
+  spHost: "netorgft7286889.sharepoint.com",
+  admins: ["wesley.hughes@utilitiesms.co.uk"],
+  termsDays: 14,
+  paSiteId: "netorgft7286889.sharepoint.com,7dbdec72-9051-417c-aa77-60ddcb37ce04,05fda148-0a25-40ac-b274-a47edcacdfbb",
+  staffListId: "90c04da4-7c45-480a-982b-64b6de6cb357",
+  invoicesListId: "c220e603-0688-4f8c-a74a-60867aff26d6",
+  customersListId: "0d189597-934f-4d29-9864-2aed058f60ec",
+  invoicingListIds: {
+    "Customers":"0d189597-934f-4d29-9864-2aed058f60ec",
+    "Invoices":"c220e603-0688-4f8c-a74a-60867aff26d6",
+    "Invoice Details":"0e69694e-f603-4f10-a583-f2c15e99d6d9",
+    "Settings":"5d7a5431-af5c-4f03-b5ac-a4ed97149916"
+  },
+  sites: {
+    pa: { label:"PowerAnalytix (staff + invoicing)",
+      graphId:"netorgft7286889.sharepoint.com,7dbdec72-9051-417c-aa77-60ddcb37ce04,05fda148-0a25-40ac-b274-a47edcacdfbb",
+      lists:{ "Staff":"90c04da4-7c45-480a-982b-64b6de6cb357",
+              "Customers":"0d189597-934f-4d29-9864-2aed058f60ec",
+              "Invoices":"c220e603-0688-4f8c-a74a-60867aff26d6",
+              "Invoice Details":"0e69694e-f603-4f10-a583-f2c15e99d6d9",
+              "Settings":"5d7a5431-af5c-4f03-b5ac-a4ed97149916" },
+      sensitive:["Customers","Invoices","Invoice Details","Settings"], manage:true },
+    ts: { label:"Timesheets",
+      graphId:"netorgft7286889.sharepoint.com,e8cbd86e-e98b-46c0-ab5e-ea2805525cd5,74b8ba2d-7746-467d-a85a-e6882f9a11bd",
+      lists:{ "DailyTimesheet":"60e32298-a03a-4a7d-9418-2834b4e7aa49",
+              "Profile":"00e65f9e-40e9-46b0-9068-3c017f40f1fe",
+              "Payment":"6d654f75-1718-4d89-8a79-af120c8bb000",
+              "Invoices":"af7749d7-e69e-4a4a-b0a5-9a6375090413",
+              "InvoiceCounter":"b2984b9f-d822-448c-8f58-7402c9f38576" },
+      sensitive:[], manage:false },
+    ex: { label:"Expenses",
+      graphId:"netorgft7286889.sharepoint.com,7ea87cd4-0fea-4a09-9591-d64b03c67873,74b8ba2d-7746-467d-a85a-e6882f9a11bd",
+      lists:{ "Expenses":"e146d21d-8fe4-410a-b1cb-bf717e6758d4",
+              "Settings":"8e4007ee-4f3e-48d4-9997-efe79c769939" },
+      sensitive:[], manage:false }
+  }
+};
+const GRAPH="https://graph.microsoft.com/v1.0";
+const SCOPES=["User.Read","Sites.ReadWrite.All","User.Invite.All"];
+const USERMGMT_SCOPES=["User.ReadWrite.All"];   /* optional: invite status + guest deletion */
+const SP_SCOPES=["https://"+CONFIG.spHost+"/AllSites.FullControl"];
+const MANAGE_ROLES=["Read","Contribute","Edit","Full Control"];
+const HOT_ROLES=["Full Control","Edit","Contribute","Design"];
+
+const msalConfig={auth:{clientId:CONFIG.clientId,authority:"https://login.microsoftonline.com/"+CONFIG.tenantId,
+  redirectUri:CONFIG.redirectUri},cache:{cacheLocation:"sessionStorage"}};
+let pca, account=null, STAFF=[], CUSTOMERS={}, INVOICES=[];
+let SITE={};              /* per-site context cache: {webUrl,groups,roleDefs} */
+let ACCESS=null;          /* emailLower -> {visitor,ts,ex,inv} */
+let ENTRA=null;           /* emailLower -> {state,id,userType} | null-scope */
+let spReady=false, userMgmtOK=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const yes=v=>v===true||v==="true"||v==="Yes";
+const money=n=>'£'+(Number(n)||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+function showMsg(t,c){const m=$('msg');m.textContent=t;m.className='msg '+c;
+  if(c==='ok') setTimeout(()=>{if(m.textContent===t)m.className='msg';},5000);}
+function busy(on){$('busy').className=on?'show':'';}
+
+/* ================= auth + gate ================= */
+function gate(msg,isErr,signedIn){
+  $('app').classList.add('hidden'); $('gate').style.display='flex';
+  const m=$('gateMsg'); m.textContent=msg; m.className=isErr?'err':'';
+  $('gateSignIn').style.display=signedIn?'none':'';
+  $('gateSwitch').style.display=(signedIn&&isErr)?'':'none';
+}
+async function init(){
+  $('logoImg').src=$('gateLogo').src;
+  pca=new msal.PublicClientApplication(msalConfig);
+  await pca.initialize();
+  try{const r=await pca.handleRedirectPromise();if(r&&r.account)account=r.account;}catch(e){console.error(e);}
+  if(!account){const a=pca.getAllAccounts();if(a.length)account=a[0];}
+  if(!account){
+    const u=new URLSearchParams(location.search).get("u");
+    if(u && !sessionStorage.getItem("paHintTried")){
+      sessionStorage.setItem("paHintTried","1");
+      pca.loginRedirect({scopes:SCOPES,loginHint:u}); return;
+    }
+    try{const s=await pca.ssoSilent({scopes:SCOPES});if(s&&s.account)account=s.account;}catch(e){}
+  }
+  if(!account){ gate('Sign in with your administrator account.',false,false); return; }
+  await authorise();
+}
+$('gateSignIn').onclick=()=>pca.loginRedirect({scopes:SCOPES});
+$('gateSwitch').onclick=()=>pca.loginRedirect({scopes:SCOPES,prompt:'select_account'});
+async function getToken(){
+  try{const r=await pca.acquireTokenSilent({scopes:SCOPES,account});return r.accessToken;}
+  catch(e){await pca.acquireTokenRedirect({scopes:SCOPES});throw e;}
+}
+async function spToken(){
+  try{const r=await pca.acquireTokenSilent({scopes:SP_SCOPES,account});return r.accessToken;}
+  catch(e){await pca.acquireTokenRedirect({scopes:SP_SCOPES});throw e;}
+}
+async function optionalToken(scopes){ /* silent-only: never redirects; null if unavailable */
+  try{const r=await pca.acquireTokenSilent({scopes,account});return r.accessToken;}
+  catch(e){return null;}
+}
+
+/* ================= Graph list helpers ================= */
+async function getList(listId){
+  const token=await getToken();
+  const res=await fetch(GRAPH+"/sites/"+CONFIG.paSiteId+"/lists/"+listId+"/items?$expand=fields&$top=500",
+    {headers:{Authorization:"Bearer "+token,Prefer:"HonorNonIndexedQueriesWarningMayFailRandomly"}});
+  if(!res.ok) throw new Error("List read "+res.status);
+  const d=await res.json(); return (d.value||[]).map(i=>{const f=i.fields||{};f._id=i.id;return f;});
+}
+async function patchItem(listId,id,fields){
+  const token=await getToken();
+  const res=await fetch(GRAPH+"/sites/"+CONFIG.paSiteId+"/lists/"+listId+"/items/"+id+"/fields",
+    {method:"PATCH",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify(fields)});
+  if(!res.ok) throw new Error("Update "+res.status);
+}
+async function createItem(listId,fields){
+  const token=await getToken();
+  const res=await fetch(GRAPH+"/sites/"+CONFIG.paSiteId+"/lists/"+listId+"/items",
+    {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({fields})});
+  if(!res.ok) throw new Error("Create "+res.status);
+  return res.json();
+}
+async function deleteItem(listId,id){
+  const token=await getToken();
+  const res=await fetch(GRAPH+"/sites/"+CONFIG.paSiteId+"/lists/"+listId+"/items/"+id,
+    {method:"DELETE",headers:{Authorization:"Bearer "+token}});
+  if(!res.ok && res.status!==404) throw new Error("Delete "+res.status);
+}
+
+/* ================= Entra: invites, status, deletion ================= */
+async function sendInvite(email,name){
+  const token=await getToken();
+  const res=await fetch(GRAPH+"/invitations",{method:"POST",
+    headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
+    body:JSON.stringify({
+      invitedUserEmailAddress:email,
+      invitedUserDisplayName:name||email,
+      inviteRedirectUrl:"https://portal.poweranalytix.co.uk/",
+      sendInvitationMessage:true,
+      invitedUserMessageInfo:{customizedMessageBody:
+        "You've been given access to the Power Analytix suite. Accept this invitation, then sign in at https://portal.poweranalytix.co.uk"}
+    })});
+  if(!res.ok){
+    const t=await res.text();
+    if(res.status===403) throw new Error("invite blocked (403) — is Graph User.Invite.All consented on the app registration?");
+    throw new Error("invite failed ("+res.status+") "+t.slice(0,160));
+  }
+  return res.json();
+}
+async function findEntraUser(email){
+  const token=await optionalToken(USERMGMT_SCOPES);
+  if(!token) return undefined;
+  const flt=encodeURIComponent("mail eq '"+email.replace(/'/g,"''")+"'");
+  const res=await fetch(GRAPH+"/users?$filter="+flt+"&$select=id,userType,externalUserState",
+    {headers:{Authorization:"Bearer "+token}});
+  if(!res.ok) return undefined;
+  const d=await res.json();
+  return (d.value&&d.value[0])||null;
+}
+async function loadEntraStates(){
+  const token=await optionalToken(USERMGMT_SCOPES);
+  userMgmtOK=!!token;
+  if(!token){ ENTRA=null; return; }
+  ENTRA={};
+  for(const f of STAFF){
+    const email=(f.Title||"").toLowerCase(); if(!email) continue;
+    try{ ENTRA[email]=await findEntraUser(email); }catch(e){ ENTRA[email]=undefined; }
+  }
+}
+async function deleteEntraUser(id){
+  const token=await optionalToken(USERMGMT_SCOPES);
+  if(!token) throw new Error("Entra deletion needs the User.ReadWrite.All permission consented.");
+  const res=await fetch(GRAPH+"/users/"+id,{method:"DELETE",headers:{Authorization:"Bearer "+token}});
+  if(!res.ok) throw new Error("Entra delete failed ("+res.status+")");
+}
+
+/* ================= SharePoint REST (multi-site) ================= */
+async function spReq(siteKey,method,path,body){
+  const ctx=await ensureSite(siteKey);
+  const t=await spToken();
+  const headers={Authorization:"Bearer "+t,Accept:"application/json;odata=nometadata"};
+  if(body!==undefined) headers["Content-Type"]="application/json;odata=nometadata";
+  if(method==="DELETE"){headers["X-HTTP-Method"]="DELETE";method="POST";}
+  if(method==="POST" && !path.startsWith("contextinfo")){
+    try{
+      const ci=await fetch(ctx.webUrl+"/_api/contextinfo",{method:"POST",
+        headers:{Authorization:"Bearer "+t,Accept:"application/json;odata=nometadata"}});
+      if(ci.ok) headers["X-RequestDigest"]=(await ci.json()).FormDigestValue;
+    }catch(e){}
+  }
+  const res=await fetch(ctx.webUrl+"/_api/"+path,{method,headers,body:body!==undefined?JSON.stringify(body):undefined});
+  if(!res.ok){
+    const txt=await res.text();
+    console.error("SP FAIL",siteKey,method,path,res.status,txt);
+    throw new Error("SharePoint "+res.status+" on "+path.split("?")[0]+" "+txt.slice(0,200));
+  }
+  const ct=res.headers.get("content-type")||"";
+  return ct.includes("json")?res.json():null;
+}
+const spGet=(k,p)=>spReq(k,"GET",p);
+const spPost=(k,p,b)=>spReq(k,"POST",p,b);
+const spDel=(k,p)=>spReq(k,"DELETE",p);
+
+async function ensureSite(siteKey){
+  if(SITE[siteKey]&&SITE[siteKey].webUrl&&SITE[siteKey].groups) return SITE[siteKey];
+  const site=CONFIG.sites[siteKey];
+  const ctx=SITE[siteKey]=SITE[siteKey]||{};
+  if(!ctx.webUrl){
+    const token=await getToken();
+    const res=await fetch(GRAPH+"/sites/"+site.graphId+"?$select=webUrl",{headers:{Authorization:"Bearer "+token}});
+    if(!res.ok) throw new Error("Couldn't resolve "+site.label+" URL ("+res.status+")");
+    ctx.webUrl=(await res.json()).webUrl;
+  }
+  if(!ctx.groups){
+    const t=await spToken();
+    const hdr={Authorization:"Bearer "+t,Accept:"application/json;odata=nometadata"};
+    const g=async p=>{const r=await fetch(ctx.webUrl+"/_api/"+p,{headers:hdr});
+      if(!r.ok) throw new Error("SharePoint "+r.status+" resolving groups on "+site.label); return r.json();};
+    const [o,m,v,rd]=await Promise.all([
+      g("web/associatedownergroup?$select=Id,Title"),
+      g("web/associatedmembergroup?$select=Id,Title"),
+      g("web/associatedvisitorgroup?$select=Id,Title"),
+      g("web/roledefinitions?$select=Id,Name")
+    ]);
+    ctx.groups={owner:o,member:m,visitor:v};
+    ctx.roleDefs={}; (rd.value||[]).forEach(r=>ctx.roleDefs[r.Name]=r.Id);
+  }
+  return ctx;
+}
+const emailOf=u=>((u.Email||String(u.LoginName||"").split("|").pop())||"").toLowerCase();
+async function groupUsers(siteKey,gid){
+  const d=await spGet(siteKey,"web/sitegroups("+gid+")/users?$select=Id,Title,Email,LoginName,PrincipalType");
+  return d.value||[];
+}
+async function addToGroup(siteKey,gid,email){
+  await spPost(siteKey,"web/sitegroups("+gid+")/users",{LoginName:"i:0#.f|membership|"+email});
+}
+async function removeFromGroup(siteKey,gid,email){
+  const users=await groupUsers(siteKey,gid);
+  const u=users.find(x=>emailOf(x)===email.toLowerCase());
+  if(u) await spPost(siteKey,"web/sitegroups("+gid+")/users/removebyid("+u.Id+")");
+}
+async function ensureUserId(siteKey,email){
+  const d=await spPost(siteKey,"web/ensureuser",{logonName:"i:0#.f|membership|"+email});
+  return d.Id;
+}
+async function removeListAssignment(siteKey,listId,pid){
+  try{ await spDel(siteKey,"web/lists(guid'"+listId+"')/roleassignments/getbyprincipalid("+pid+")"); }
+  catch(e){ if(!/404/.test(e.message)) throw e; }
+}
+async function grantInvoicing(email){
+  const ctx=await ensureSite("pa");
+  const rid=ctx.roleDefs["Edit"]||ctx.roleDefs["Contribute"];
+  const pid=await ensureUserId("pa",email);
+  for(const id of Object.values(CONFIG.invoicingListIds)){
+    await removeListAssignment("pa",id,pid);
+    await spPost("pa","web/lists(guid'"+id+"')/roleassignments/addroleassignment(principalid="+pid+",roledefid="+rid+")");
+  }
+}
+async function revokeInvoicing(email){
+  const pid=await ensureUserId("pa",email);
+  for(const id of Object.values(CONFIG.invoicingListIds)){
+    await removeListAssignment("pa",id,pid);
+  }
+}
+
+/* ================= access state + sync ================= */
+async function loadAccessState(){
+  try{
+    const [pa,ts,ex]=await Promise.all([ensureSite("pa"),ensureSite("ts"),ensureSite("ex")]);
+    const [vis,tsm,exm,invRas]=await Promise.all([
+      groupUsers("pa",pa.groups.visitor.Id),
+      groupUsers("ts",ts.groups.member.Id),
+      groupUsers("ex",ex.groups.member.Id),
+      spGet("pa","web/lists(guid'"+CONFIG.invoicesListId+"')/roleassignments?$expand=Member")
+    ]);
+    ACCESS={};
+    const mark=(arr,key)=>arr.forEach(u=>{const e=emailOf(u);if(!e)return;(ACCESS[e]=ACCESS[e]||{})[key]=true;});
+    mark(vis,"visitor"); mark(tsm,"ts"); mark(exm,"ex");
+    (invRas.value||[]).forEach(ra=>{const m=ra.Member||{};if(m.PrincipalType===1){const e=emailOf(m);
+      if(e)(ACCESS[e]=ACCESS[e]||{}).inv=true;}});
+    spReady=true;
+  }catch(e){ console.warn("access state load failed",e); ACCESS=null; spReady=false; }
+}
+function expectedAccess(f){
+  const act=yes(f.Active);
+  return { visitor:act, ts:act&&yes(f.HasTimesheet), ex:act&&yes(f.HasExpenses), inv:act&&yes(f.HasInvoices) };
+}
+function accessMatches(f){
+  if(!ACCESS) return null;
+  const have=ACCESS[(f.Title||"").toLowerCase()]||{};
+  const want=expectedAccess(f);
+  return ["visitor","ts","ex","inv"].every(k=>!!have[k]===!!want[k]);
+}
+async function syncUser(f){
+  const email=(f.Title||"").toLowerCase();
+  const want=expectedAccess(f);
+  const [pa,ts,ex]=await Promise.all([ensureSite("pa"),ensureSite("ts"),ensureSite("ex")]);
+  if(want.visitor) await addToGroup("pa",pa.groups.visitor.Id,email);
+  else await removeFromGroup("pa",pa.groups.visitor.Id,email);
+  if(want.ts) await addToGroup("ts",ts.groups.member.Id,email);
+  else await removeFromGroup("ts",ts.groups.member.Id,email);
+  if(want.ex) await addToGroup("ex",ex.groups.member.Id,email);
+  else await removeFromGroup("ex",ex.groups.member.Id,email);
+  if(want.inv) await grantInvoicing(email);
+  else await revokeInvoicing(email);
+}
+async function sweepUser(email){ /* full removal, visitor included */
+  const [pa,ts,ex]=await Promise.all([ensureSite("pa"),ensureSite("ts"),ensureSite("ex")]);
+  await removeFromGroup("ts",ts.groups.member.Id,email);
+  await removeFromGroup("ex",ex.groups.member.Id,email);
+  await revokeInvoicing(email);
+  await removeFromGroup("pa",pa.groups.visitor.Id,email);
+}
+
+/* ================= authorise ================= */
+async function authorise(){
+  const email=(account.username||"").toLowerCase();
+  const bootstrap=CONFIG.admins.map(s=>s.toLowerCase()).includes(email);
+  let ok=bootstrap;
+  try{
+    STAFF=await getList(CONFIG.staffListId);
+    const me=STAFF.find(f=>((f.Title)||"").toLowerCase()===email);
+    if(!ok && me && yes(me.IsAdmin) && yes(me.Active)) ok=true;
+  }catch(e){ console.warn(e); if(!bootstrap){ gate('Could not verify admin access — '+e.message,true,true); return; } }
+  if(!ok){ gate('You are not authorised to use the admin area ('+email+').',true,true); return; }
+  $('gate').style.display='none'; $('app').classList.remove('hidden');
+  renderStaff();
+  loadInvoices();
+  /* Front-load the SharePoint token so later clicks never redirect mid-action */
+  try{ await spToken(); }catch(e){ return; /* redirecting */ }
+  await loadAccessState();
+  renderStaff();
+  loadEntraStates().then(renderStaff);
+  $('permSite').innerHTML=Object.entries(CONFIG.sites).map(([k,s])=>'<option value="'+k+'">'+esc(s.label)+'</option>').join('');
+  const wanted=new URLSearchParams(location.search).get("tab");
+  if(wanted){const b=document.querySelector('.tab[data-t="'+wanted+'"]');if(b)b.click();}
+}
+
+/* ================= users & access ================= */
+function inviteChip(f,isBootstrap){
+  const email=(f.Title||"").toLowerCase();
+  if(isBootstrap) return '<td class="c"></td>';
+  if(ENTRA){
+    const u=ENTRA[email];
+    if(u===null) return '<td class="c"><button class="inviteBtn" data-email="'+esc(f.Title||'')+'" data-name="'+esc(f.OfficialName||'')+'">Invite</button></td>';
+    if(u&&u.userType==="Member") return '<td class="c"><span class="chip mut">Internal</span></td>';
+    if(u&&u.externalUserState==="PendingAcceptance")
+      return '<td class="c"><span class="chip pend">Pending</span> <button class="inviteBtn" data-email="'+esc(f.Title||'')+'" data-name="'+esc(f.OfficialName||'')+'">Resend</button></td>';
+    if(u) return '<td class="c"><span class="chip sync">Accepted ✓</span></td>';
+  }
+  return '<td class="c"><button class="inviteBtn" data-email="'+esc(f.Title||'')+'" data-name="'+esc(f.OfficialName||'')+'">Invite</button></td>';
+}
+function accessChip(f,isBootstrap){
+  if(isBootstrap) return '<td class="c"><span class="chip mut">owner</span></td>';
+  if(!spReady||!ACCESS) return '<td class="c"><span class="chip mut">…</span></td>';
+  const m=accessMatches(f);
+  return m ? '<td class="c"><span class="chip sync">✓ in sync</span></td>'
+           : '<td class="c"><span class="chip warn syncBtn" data-id="'+f._id+'" title="SharePoint doesn\'t match the flags — click to fix">⚠ sync</span></td>';
+}
+function renderStaff(){
+  const t=$('staffTable');
+  if(!STAFF.length){ t.innerHTML='<tr><td class="c" style="color:var(--muted)">No staff rows yet.</td></tr>'; return; }
+  t.innerHTML='<thead><tr><th>Name</th><th>Email</th><th class="c">Timesheet</th><th class="c">Expenses</th>'+
+    '<th class="c">Invoices</th><th class="c">Admin</th><th class="c">Active</th><th class="c">Access</th><th class="c">Invite</th><th class="c">Remove</th></tr></thead><tbody>'+
+    STAFF.map(f=>{
+      const email=(f.Title||"").toLowerCase();
+      const isBootstrap=CONFIG.admins.map(s=>s.toLowerCase()).includes(email);
+      const cell=flag=>{
+        const on=yes(f[flag]);
+        const lock=isBootstrap&&(flag==="IsAdmin"||flag==="Active");
+        return '<td class="c">'+(lock
+          ? '<span class="pill on" title="Protected bootstrap admin">On</span>'
+          : '<span class="pill tgl '+(on?'on':'off')+'" data-id="'+f._id+'" data-flag="'+flag+'" data-val="'+(on?1:0)+'">'+(on?'On':'Off')+'</span>')+'</td>';
+      };
+      const rm=isBootstrap?'<td class="c"></td>'
+        :'<td class="c"><button class="rmBtn" data-id="'+f._id+'" data-email="'+esc(f.Title||'')+'" data-name="'+esc(f.OfficialName||'')+'">Remove</button></td>';
+      return '<tr><td style="font-weight:600">'+esc(f.OfficialName||'')+'</td><td style="color:var(--muted)">'+esc(f.Title||'')+'</td>'+
+        cell('HasTimesheet')+cell('HasExpenses')+cell('HasInvoices')+cell('IsAdmin')+cell('Active')+
+        accessChip(f,isBootstrap)+inviteChip(f,isBootstrap)+rm+'</tr>';
+    }).join('')+'</tbody>';
+
+  t.querySelectorAll('.inviteBtn').forEach(b=>b.onclick=async()=>{
+    const email=b.dataset.email, name=b.dataset.name;
+    if(!confirm('Send a Microsoft invitation email to '+email+'?\n\nThey\'ll get a link to accept, then be redirected to the portal.')) return;
+    b.disabled=true; b.textContent='Sending…';
+    try{ await sendInvite(email,name); showMsg('Invitation sent to '+email+'.','ok'); b.textContent='Sent ✓'; }
+    catch(e){ showMsg('Invite — '+e.message,'err'); b.textContent='Invite'; b.disabled=false; }
+  });
+
+  t.querySelectorAll('.syncBtn').forEach(c=>c.onclick=async()=>{
+    const f=STAFF.find(s=>s._id===c.dataset.id); if(!f) return;
+    if(!confirm('Sync SharePoint access for '+(f.OfficialName||f.Title)+' to match their flags?')) return;
+    busy(true);
+    try{ await syncUser(f); await loadAccessState(); renderStaff(); showMsg('Access synced for '+(f.OfficialName||f.Title)+'.','ok'); }
+    catch(e){ showMsg('Sync failed — '+e.message,'err'); }
+    finally{ busy(false); }
+  });
+
+  t.querySelectorAll('.rmBtn').forEach(b=>b.onclick=()=>removeUser(b.dataset.id,b.dataset.email,b.dataset.name));
+
+  t.querySelectorAll('.tgl').forEach(p=>p.onclick=async()=>{
+    const id=p.dataset.id, flag=p.dataset.flag, cur=p.dataset.val==='1', nv=!cur;
+    if(flag==='IsAdmin' && !confirm((nv?'Grant':'Remove')+' admin rights?')) return;
+    if(flag==='Active' && !nv && !confirm('Deactivate this user? They will be removed from the app groups and lose access to all apps.')) return;
+    p.textContent='…'; p.className='pill busy';
+    try{
+      await patchItem(CONFIG.staffListId,id,{[flag]:nv});
+      const row=STAFF.find(s=>s._id===id); if(row) row[flag]=nv;
+      if(flag!=='IsAdmin' && row){          /* flags drive real SharePoint access */
+        await syncUser(row);
+        await loadAccessState();
+      }
+      renderStaff(); showMsg('Updated'+(flag!=='IsAdmin'?' — SharePoint access synced.':'.'),'ok');
+    }catch(e){ renderStaff(); showMsg('Update failed — '+e.message,'err'); }
+  });
+}
+
+async function removeUser(id,email,name){
+  if(!confirm('Remove '+name+' ('+email+') from the suite?\n\nThis deletes their Staff row and removes all their SharePoint access (Staff-list read, app groups, invoicing lists).')) return;
+  busy(true);
+  try{
+    await sweepUser(email.toLowerCase());
+    await deleteItem(CONFIG.staffListId,id);
+    let extra='';
+    const u=ENTRA?ENTRA[email.toLowerCase()]:undefined;
+    if(u && u.userType==="Guest"){
+      if(confirm('Also delete their Microsoft guest account from Entra?\n\nOK = delete the guest identity (recoverable for 30 days)\nCancel = keep the account')){
+        await deleteEntraUser(u.id); extra=' Guest account deleted from Entra.';
+      }
+    }else if(!userMgmtOK){
+      extra=' (Entra guest not touched — add User.ReadWrite.All to enable that option.)';
+    }
+    STAFF=await getList(CONFIG.staffListId);
+    await loadAccessState(); if(ENTRA) delete ENTRA[email.toLowerCase()];
+    renderStaff();
+    showMsg(name+' removed from the suite.'+extra,'ok');
+  }catch(e){ showMsg('Remove failed — '+e.message,'err'); }
+  finally{ busy(false); }
+}
+
+$('addUserBtn').onclick=async()=>{
+  const email=$('u_email').value.trim().toLowerCase(), name=$('u_name').value.trim(), biz=$('u_biz').value.trim();
+  if(!email||!email.includes('@')) return showMsg('Enter a valid sign-in email.','err');
+  if(!name) return showMsg('Enter the official name.','err');
+  if(STAFF.some(f=>(f.Title||'').toLowerCase()===email)) return showMsg('That email already has a row.','err');
+  if(!confirm('Add '+name+' ('+email+')?')) return;
+  try{
+    await createItem(CONFIG.staffListId,{Title:email,OfficialName:name,BusinessName:biz,
+      Active:true,HasTimesheet:false,HasExpenses:false,HasInvoices:false,IsAdmin:false});
+    let inviteNote='';
+    if($('u_invite').checked){
+      try{ await sendInvite(email,name); inviteNote=' Microsoft invitation sent.'; }
+      catch(e){ inviteNote=' Row created but '+e.message; }
+    }
+    STAFF=await getList(CONFIG.staffListId);
+    if(ENTRA){ try{ ENTRA[email]=await findEntraUser(email); }catch(e){} }
+    renderStaff(); $('u_email').value='';$('u_name').value='';$('u_biz').value='';
+    showMsg('User added.'+inviteNote+' Switch on their app flags to grant access.','ok');
+  }catch(e){ showMsg('Add failed — '+e.message,'err'); }
+};
+
+/* ================= invoices summary ================= */
+function dParts(s){ const str=String(s||'').trim().split('T')[0]; const p=str.split(/[\/\-]/);
+  if(p.length!==3) return null; let d,m,y;
+  if(p[0].length===4){y=+p[0];m=+p[1];d=+p[2];} else {m=+p[0];d=+p[1];y=+p[2];}
+  const dt=new Date(y,m-1,d); return isNaN(dt)?null:dt; }
+function effStatus(i){
+  if(i.Status==="Paid") return "Paid";
+  const dt=dParts(i.InvoiceDate); if(dt){ dt.setDate(dt.getDate()+CONFIG.termsDays);
+    if(i.Status!=="Draft" && dt<new Date()) return "Overdue"; }
+  return i.Status||"Draft";
+}
+async function loadInvoices(){
+  try{
+    const [inv,cust]=await Promise.all([getList(CONFIG.invoicesListId),getList(CONFIG.customersListId)]);
+    CUSTOMERS={}; cust.forEach(c=>CUSTOMERS[c._id]=c.CompanyName||c.Title||'');
+    INVOICES=inv;
+    const rows=inv.map(i=>({i,st:effStatus(i)}));
+    const out=rows.filter(r=>r.st==='Sent'||r.st==='Overdue');
+    const total=out.reduce((a,r)=>a+(Number(r.i.InvoiceTotal)||0),0);
+    $('invSum').innerHTML='<span>Outstanding: <b>'+money(total)+'</b></span>'+
+      '<span>Overdue: <b style="color:'+(rows.some(r=>r.st==='Overdue')?'#C0392B':'inherit')+'">'+rows.filter(r=>r.st==='Overdue').length+'</b></span>'+
+      '<span>Invoices: <b>'+inv.length+'</b></span>';
+    const badge=st=>{const c={Draft:'#9aa2b8',Sent:'#507DE5',Paid:'#1E7A52',Overdue:'#C0392B'}[st];
+      return '<span class="pill" style="background:'+c+'">'+st+'</span>';};
+    $('invTable').innerHTML='<thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th class="c">Status</th><th style="text-align:right">Total</th></tr></thead><tbody>'+
+      rows.sort((a,b)=>String(b.i.InvoiceNo).localeCompare(String(a.i.InvoiceNo)))
+        .map(r=>'<tr><td style="font-weight:600;color:var(--brand)">'+esc(r.i.InvoiceNo||r.i.Title||'')+'</td>'+
+          '<td>'+esc(CUSTOMERS[r.i.CustomerLookupLookupId]||'')+'</td>'+
+          '<td>'+(dParts(r.i.InvoiceDate)?dParts(r.i.InvoiceDate).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'')+'</td>'+
+          '<td class="c">'+badge(r.st)+'</td>'+
+          '<td style="text-align:right;font-weight:600">'+money(r.i.InvoiceTotal)+'</td></tr>').join('')+'</tbody>';
+  }catch(e){ $('invSum').textContent='Could not load invoices — '+e.message; }
+}
+
+/* ================= permissions tab ================= */
+const RA_EXPAND="roleassignments?$expand=Member/Users,RoleDefinitionBindings";
+const listPath=id=>"web/lists(guid'"+id+"')";
+function staffHas(email){
+  const e=(email||"").toLowerCase(); if(!e) return true;
+  if(CONFIG.admins.map(s=>s.toLowerCase()).includes(e)) return true;
+  return STAFF.some(f=>(f.Title||"").toLowerCase()===e);
+}
+function orphanTag(email){ return staffHas(email)?'':' <span class="orphan">⚠ not in Staff</span>'; }
+function principalHtml(m){
+  const type={1:"User",4:"Security group",8:"SharePoint group"}[m.PrincipalType]||"Principal";
+  const login=(m.LoginName||"").split("|").pop();
+  const em=m.PrincipalType===1?(m.Email||login):"";
+  let members="";
+  if(m.Users&&m.Users.length){
+    members='<ul class="members">'+m.Users.map(u=>{
+      const ue=emailOf(u);
+      return "<li>"+esc(u.Title)+(ue?" — "+esc(ue):"")+(u.PrincipalType===1?orphanTag(ue):"")+"</li>";
+    }).join("")+"</ul>";
+  }
+  return '<div class="who"><b>'+esc(m.Title||login)+'</b><span>'+type+(em?" · "+esc(em):"")+'</span>'+
+    (m.PrincipalType===1?orphanTag(em):"")+members+'</div>';
+}
+function roleChips(bindings){
+  return (bindings||[]).map(r=>'<span class="rolechip'+(HOT_ROLES.includes(r.Name)?' hot':'')+'">'+esc(r.Name)+'</span>').join("");
+}
+function roleSelect(current,cls){
+  return '<select class="'+cls+'">'+MANAGE_ROLES.map(r=>'<option'+(r===current?' selected':'')+'>'+r+'</option>').join("")+'</select>';
+}
+function isProtectedPrin(siteKey,m){
+  const ctx=SITE[siteKey];
+  return (ctx&&ctx.groups&&m.Id===ctx.groups.owner.Id) || m.Title==="System Account" ||
+    (m.PrincipalType===1 && (m.Email||"").toLowerCase()===(account.username||"").toLowerCase());
+}
+function permBlock(siteKey,title,pill,ras,opts){
+  const o=opts||{};
+  let head='<div class="scopehead">'+esc(title)+pill;
+  if(o.headerActions) head+='<span class="actions">'+o.headerActions+'</span>';
+  head+='</div>';
+  const rows=(ras.value||[]).map(ra=>{
+    const m=ra.Member||{};
+    let act='';
+    if(o.editable){
+      if(isProtectedPrin(siteKey,m)) act='<span style="font-size:12px;color:var(--muted)">protected</span>';
+      else{
+        const cur=(ra.RoleDefinitionBindings||[]).map(r=>r.Name).find(n=>MANAGE_ROLES.includes(n))||"";
+        act='<div class="rowact" data-list="'+o.listId+'" data-pid="'+m.Id+'" data-name="'+esc(m.Title||'')+'">'+
+          roleSelect(cur,"roleSel")+
+          '<button class="tiny ghost applyRole">Apply</button>'+
+          '<button class="tiny danger removePrin">Remove</button></div>';
+      }
+    }
+    return "<tr><td style='width:46%'>"+principalHtml(m)+"</td><td style='width:27%'>"+roleChips(ra.RoleDefinitionBindings)+"</td><td>"+act+"</td></tr>";
+  }).join("");
+  let html='<div class="scopeblock">'+head+
+    '<table class="perm"><thead><tr><th>Who</th><th>Permission level</th><th>'+(o.editable?'Manage':'')+'</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  if(o.editable){
+    html+='<div class="addrow" data-list="'+o.listId+'">'+
+      '<input type="email" class="addEmail" placeholder="person@company.com" />'+
+      roleSelect("Read","addRole")+
+      '<button class="tiny addPerson">Add to this list</button>'+
+      '<span style="font-size:12px;color:var(--muted)">adds the person to this list only</span></div>';
+  }
+  if(o.note) html+='<div class="pnote">'+o.note+'</div>';
+  return html+'</div>';
+}
+async function runPermReport(){
+  const siteKey=$('permSite').value;
+  const site=CONFIG.sites[siteKey];
+  $('permOut').innerHTML='<p style="color:var(--muted)">Running report on '+esc(site.label)+'…</p>';
+  $('permStatus').textContent='';
+  try{
+    const ctx=await ensureSite(siteKey);
+    const siteRas=await spGet(siteKey,"web/"+RA_EXPAND);
+    let html=permBlock(siteKey,"Site — everyone below can reach any list that still inherits",
+      '<span class="ppill site">SITE</span>',siteRas,
+      {note:"Site membership is managed by the flag toggles on Users & Access (and the Microsoft 365 group) — shown read-only here."});
+    let exposed=[];
+    for(const [name,id] of Object.entries(site.lists)){
+      const meta=await spGet(siteKey,listPath(id)+"?$select=Title,HasUniqueRoleAssignments");
+      const unique=!!meta.HasUniqueRoleAssignments;
+      const sensitive=site.sensitive.includes(name);
+      const ras=unique?await spGet(siteKey,listPath(id)+"/"+RA_EXPAND):siteRas;
+      const groupsPresent=(ras.value||[]).some(ra=>{const m=ra.Member||{};
+        return ctx.groups && (m.Id===ctx.groups.member.Id||m.Id===ctx.groups.visitor.Id);});
+      if(sensitive && (!unique||groupsPresent)) exposed.push(name);
+      const pill=unique?'<span class="ppill uniq">UNIQUE PERMISSIONS</span>':'<span class="ppill inh">INHERITS SITE</span>';
+      const editable=site.manage&&unique;
+      const headerActions=site.manage?(unique
+        ? '<button class="tiny ghost restoreInherit" data-list="'+id+'" data-name="'+esc(name)+'">Restore inheritance</button>'
+        : '<button class="tiny breakInherit" data-list="'+id+'" data-name="'+esc(name)+'">Stop inheriting</button>'):'';
+      const note=(sensitive&&(!unique||groupsPresent))
+        ? '⚠ Exposed: '+(!unique?'this list inherits site permissions.':'the site Members/Visitors groups still have access.')+' Everyone in the SITE block can read it.'
+        : null;
+      html+=permBlock(siteKey,"List — "+name,pill,ras,{listId:id,editable,headerActions,note});
+    }
+    const summary=site.sensitive.length
+      ? (exposed.length
+        ? '<div class="summary"><span class="b">⚠ Exposure:</span> '+exposed.map(esc).join(", ")+' readable beyond Owners.'+
+          (siteKey==='pa'?'<button id="lockdownBtn">Apply recommended lockdown</button>':'')+'</div>'
+        : '<div class="summary"><span class="g">✓ Sensitive lists are locked to their own principals</span> — review each block to confirm they\'re intended.</div>')
+      : '<div class="summary"><span class="g">Report complete.</span> Principals without a Staff row are flagged — decide whether they should be removed or given a row.</div>';
+    $('permOut').innerHTML=summary+html;
+    $('permStatus').textContent='Report run '+new Date().toLocaleTimeString();
+    const lb=$('lockdownBtn'); if(lb) lb.onclick=paLockdown;
+  }catch(e){ console.error(e); $('permOut').innerHTML='<p style="color:var(--err)">'+esc(e.message)+'</p>'; }
+}
+$('permRun').onclick=runPermReport;
+
+document.addEventListener("click",ev=>{
+  const b=ev.target; if(!b.classList) return;
+  if(!(b.classList.contains("breakInherit")||b.classList.contains("restoreInherit")||
+       b.classList.contains("removePrin")||b.classList.contains("applyRole")||b.classList.contains("addPerson"))) return;
+  const siteKey=$('permSite')?$('permSite').value:'pa';
+  const rerun=fn=>async()=>{busy(true);try{await fn();showMsg('Done.','ok');}catch(e){showMsg(e.message,'err');}finally{busy(false);runPermReport();}};
+  if(b.classList.contains("breakInherit")){
+    const {list,name}=b.dataset;
+    if(!confirm('Stop "'+name+'" inheriting site permissions?\n\nCurrent principals are copied onto the list — remove the ones that shouldn\'t be there afterwards.')) return;
+    rerun(()=>spPost(siteKey,listPath(list)+"/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=true)"))();
+  }
+  if(b.classList.contains("restoreInherit")){
+    const {list,name}=b.dataset;
+    if(!confirm('Restore inheritance on "'+name+'"?\n\nIts unique permissions are deleted and it reverts to whatever the site grants.')) return;
+    rerun(()=>spPost(siteKey,listPath(list)+"/resetroleinheritance"))();
+  }
+  if(b.classList.contains("removePrin")){
+    const row=b.closest(".rowact"); const {list,pid,name}=row.dataset;
+    if(!confirm('Remove "'+name+'" from this list?')) return;
+    rerun(()=>removeListAssignment(siteKey,list,pid))();
+  }
+  if(b.classList.contains("applyRole")){
+    const row=b.closest(".rowact"); const {list,pid,name}=row.dataset;
+    const role=row.querySelector(".roleSel").value;
+    if(!confirm('Set "'+name+'" to '+role+' on this list?')) return;
+    rerun(async()=>{
+      const ctx=await ensureSite(siteKey);
+      const rid=ctx.roleDefs[role]; if(!rid) throw new Error("Level '"+role+"' not found.");
+      await removeListAssignment(siteKey,list,pid);
+      await spPost(siteKey,listPath(list)+"/roleassignments/addroleassignment(principalid="+pid+",roledefid="+rid+")");
+    })();
+  }
+  if(b.classList.contains("addPerson")){
+    const row=b.closest(".addrow"); const list=row.dataset.list;
+    const email=(row.querySelector(".addEmail").value||"").trim();
+    const role=row.querySelector(".addRole").value;
+    if(!email||!email.includes("@")){ showMsg("Enter a valid email address.","err"); return; }
+    if(!confirm('Give '+email+' '+role+' on this list?')) return;
+    rerun(async()=>{
+      const ctx=await ensureSite(siteKey);
+      const rid=ctx.roleDefs[role];
+      const pid=await ensureUserId(siteKey,email);
+      await removeListAssignment(siteKey,list,pid);
+      await spPost(siteKey,listPath(list)+"/roleassignments/addroleassignment(principalid="+pid+",roledefid="+rid+")");
+    })();
+  }
+});
+
+async function paLockdown(){
+  const ctx=await ensureSite("pa");
+  const g=ctx.groups;
+  if(!confirm("Recommended lockdown:\n\n• Customers, Invoices, Invoice Details, Settings — stop inheriting (copy), then remove \""+g.member.Title+"\" and \""+g.visitor.Title+"\"\n• Staff — stop inheriting, set \""+g.member.Title+"\" to Read\n\nOnly Owners keep access to invoicing data. Proceed?")) return;
+  busy(true);
+  try{
+    for(const id of Object.values(CONFIG.invoicingListIds)){
+      const meta=await spGet("pa",listPath(id)+"?$select=HasUniqueRoleAssignments");
+      if(!meta.HasUniqueRoleAssignments)
+        await spPost("pa",listPath(id)+"/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=true)");
+      const ras=await spGet("pa",listPath(id)+"/roleassignments?$expand=Member");
+      for(const ra of (ras.value||[])){
+        const m=ra.Member||{};
+        if(m.Id===g.member.Id||m.Id===g.visitor.Id||m.Title===g.member.Title||m.Title===g.visitor.Title)
+          await removeListAssignment("pa",id,m.Id);
+      }
+    }
+    const sid=CONFIG.staffListId;
+    const smeta=await spGet("pa",listPath(sid)+"?$select=HasUniqueRoleAssignments");
+    if(!smeta.HasUniqueRoleAssignments)
+      await spPost("pa",listPath(sid)+"/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=true)");
+    const rid=ctx.roleDefs["Read"];
+    const sras=await spGet("pa",listPath(sid)+"/roleassignments?$expand=Member");
+    const mAssign=(sras.value||[]).find(ra=>ra.Member&&(ra.Member.Id===g.member.Id||ra.Member.Title===g.member.Title));
+    if(mAssign){
+      await removeListAssignment("pa",sid,mAssign.Member.Id);
+      await spPost("pa",listPath(sid)+"/roleassignments/addroleassignment(principalid="+mAssign.Member.Id+",roledefid="+rid+")");
+    }
+    showMsg("Lockdown applied.","ok");
+  }catch(e){ showMsg(e.message,"err"); }
+  finally{ busy(false); runPermReport(); }
+}
+
+/* ================= tabs ================= */
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));
+  ['users','invoices','tools','perm'].forEach(n=>$('t-'+n).classList.toggle('hidden',n!==b.dataset.t));
+});
+
+init();
+</script>
+</body>
+</html>
